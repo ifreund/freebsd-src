@@ -166,6 +166,42 @@ err:
 }
 
 static int
+lua_dup2(lua_State *L)
+{
+	int error, oldd, newd, n;
+
+	n = lua_gettop(L);
+	luaL_argcheck(L, n == 2, n > 2 ? 3 : n,
+	    "dup2 takes exactly two arguments");
+
+	oldd = luaL_checkinteger(L, 1);
+	if (oldd < 0) {
+		error = EBADF;
+		goto err;
+	}
+
+	newd = luaL_checkinteger(L, 2);
+	if (newd < 0) {
+		error = EBADF;
+		goto err;
+	}
+
+	error = dup2(oldd, newd);
+	if (error >= 0) {
+		lua_pushinteger(L, error);
+		return (1);
+	}
+
+	error = errno;
+err:
+	lua_pushnil(L);
+	lua_pushstring(L, strerror(error));
+	lua_pushinteger(L, error);
+	return (3);
+
+}
+
+static int
 lua_fnmatch(lua_State *L)
 {
 	const char *pattern, *string;
@@ -504,6 +540,7 @@ static const struct luaL_Reg unistdlib[] = {
 	REG_SIMPLE(_exit),
 	REG_SIMPLE(chown),
 	REG_DEF(close, lua_pclose),
+	REG_SIMPLE(dup2),
 	REG_SIMPLE(fork),
 	REG_SIMPLE(getpid),
 	REG_SIMPLE(pipe),
