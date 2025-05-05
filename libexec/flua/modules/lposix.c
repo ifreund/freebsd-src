@@ -202,6 +202,50 @@ err:
 }
 
 static int
+lua_execp(lua_State *L)
+{
+	int n, argc;
+	const char *file;
+	const char **argv;
+
+	n = lua_gettop(L);
+	luaL_argcheck(L, n == 2, n > 2 ? 3 : n,
+	    "execp takes exactly two arguments");
+
+	file = luaL_checkstring(L, 1);
+	luaL_checktype(L, 2, LUA_TTABLE);
+
+	lua_len(L, 2);
+	argc = lua_tointeger(L, -1);
+	argv = lua_newuserdatauv(L, (argc + 2) * sizeof(char *), 0);
+
+	lua_pushinteger(L, 0);
+	lua_gettable(L, 2);
+	argv[0] = lua_tostring(L, -1);
+	if (argv[0] == NULL) {
+		argv[0] = file;
+	}
+
+	for (int i = 1; i <= argc; i++) {
+		lua_pushinteger(L, i);
+		lua_gettable(L, 2);
+		argv[i] = lua_tostring(L, -1);
+		if (argv[i] == NULL) {
+			luaL_argerror(L, 2,
+			    "argv table must contain only strings");
+		}
+	}
+	argv[argc + 1] = NULL;
+
+	execvp(file, (char **)argv);
+
+	lua_pushnil(L);
+	lua_pushstring(L, strerror(errno));
+	lua_pushinteger(L, errno);
+	return (3);
+}
+
+static int
 lua_fnmatch(lua_State *L)
 {
 	const char *pattern, *string;
@@ -541,6 +585,7 @@ static const struct luaL_Reg unistdlib[] = {
 	REG_SIMPLE(chown),
 	REG_DEF(close, lua_pclose),
 	REG_SIMPLE(dup2),
+	REG_SIMPLE(execp),
 	REG_SIMPLE(fork),
 	REG_SIMPLE(getpid),
 	REG_SIMPLE(pipe),
