@@ -142,6 +142,8 @@ local function select_components(components, options)
 	return selected
 end
 
+local function select_alt_kernels(pkg)
+
 -- Returns a list of pkgbase packages selected by the user
 local function select_packages(pkg, options)
 	local components = {
@@ -158,6 +160,10 @@ local function select_packages(pkg, options)
 		components["lib" .. compat .. "_dbg"] = {}
 	end
 
+	-- List of alternative kernels
+	local alt_kernels = {}
+	local alt_kernel_dbgs = {}
+
 	local rquery = capture(pkg .. "rquery -U -r FreeBSD-base %n")
 	for package in rquery:gmatch("[^\n]+") do
 		if package == "FreeBSD-src" or package:match("^FreeBSD%-src%-.*") then
@@ -165,11 +171,18 @@ local function select_packages(pkg, options)
 		elseif package == "FreeBSD-tests" or package:match("^FreeBSD%-tests%-.*") then
 			table.insert(components["tests"], package)
 		elseif package:match("^FreeBSD%-kernel%-.*") then
-			-- Kernels other than FreeBSD-kernel-generic are ignored
-			if package == "FreeBSD-kernel-generic" then
-				table.insert(components["kernel"], package)
-			elseif package == "FreeBSD-kernel-generic-dbg" then
-				table.insert(components["kernel_dbg"], package)
+			if package:match(".*%-dbg$") then
+				if package == "FreeBSD-kernel-generic-dbg" then
+					table.insert(components["kernel_dbg"], package)
+				else
+					table.insert(alt_kernel_dbgs, package)
+				end
+			else
+				if package == "FreeBSD-kernel-generic" then
+					table.insert(components["kernel"], package)
+				else
+					table.insert(alt_kernels, package)
+				end
 			end
 		elseif package:match(".*%-dbg$") then
 			table.insert(components["base_dbg"], package)
@@ -196,6 +209,12 @@ local function select_packages(pkg, options)
 	-- require it to have all packages.
 	assert(#components["kernel"] == 1)
 	assert(#components["base"] > 0)
+	
+	if not options.no_kernel then
+		local selected = select_alt_kernels(alt_kernels)
+		append_list(components["kernel"],
+	
+	end
 
 	local selected = {}
 	for _, component in ipairs(select_components(components, options)) do
