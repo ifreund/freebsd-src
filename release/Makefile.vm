@@ -82,6 +82,17 @@ ${_V}!=	eval $$(awk '/^${_V}=/{print}' ${.CURDIR}/../sys/conf/newvers.sh); echo 
 . endif
 .endfor
 
+.if !defined(NOPKGBASE) || empty(NOPKGBASE)
+.if ${BRANCH} == CURRENT || ${BRANCH} == STABLE
+SUBURL=	base_latest
+.else
+SUBURL=	base_release_${REVISION:C/[0-9]+\.//}
+.endif
+PKGBASE_CONF=	FreeBSD-base.conf
+FreeBSD-base.conf: scripts/FreeBSD-base.conf.in
+	sed "s|%%SUBURL%%|${SUBURL}|" < ${.ALLSRC} > ${.TARGET}
+.endif
+
 emulator-portinstall:
 .if !exists(/usr/local/bin/qemu-${TARGET_ARCH}-static)
 .if exists(${PORTSDIR}/emulators/qemu-user-static/Makefile)
@@ -131,7 +142,7 @@ ${_CW:tu}${_FS:tu}${_FMT:tu}IMAGE=	${_CW:tl}.${_FS}.${_FMT}
 cw-${_CW:tl}-${_FS}-${_FMT}: cw-ec2-base-${_FS}-${_FMT}
 .endif
 
-cw-${_CW:tl}-${_FS}-${_FMT}: ${QEMUTGT} ${PKGBASE_REPO_DIR}
+cw-${_CW:tl}-${_FS}-${_FMT}: ${QEMUTGT} ${PKGBASE_REPO_DIR} ${PKGBASE_CONF}
 	mkdir -p ${.OBJDIR}/${.TARGET}
 	env TARGET=${TARGET} TARGET_ARCH=${TARGET_ARCH} SWAPSIZE=${SWAPSIZE} \
 		QEMUSTATIC=${QEMUSTATIC} \
@@ -187,7 +198,7 @@ CLEANFILES+=	${VMBASE}.${FS}.${FORMAT}
 
 vm-base:	vm-image
 
-vm-image:	${QEMUTGT} ${PKGBASE_REPO_DIR}
+vm-image:	${QEMUTGT} ${PKGBASE_REPO_DIR} ${PKGBASE_CONF}
 .if defined(WITH_VMIMAGES) && !empty(WITH_VMIMAGES)
 . for FORMAT in ${VMFORMATS}
 .  for FS in ${VMFSLIST}

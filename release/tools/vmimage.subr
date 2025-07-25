@@ -99,6 +99,9 @@ vm_install_base() {
 		selected=$($pkg_cmd rquery -U -r FreeBSD-base %n | \
 			vm_filter_base_packages | vm_extra_filter_base_packages)
 		$pkg_cmd install -U -r FreeBSD-base $selected
+
+		mkdir -p ${DESTDIR}/etc/pkg/repos/
+		cp FreeBSD-base.conf ${DESTDIR}/etc/pkg/repos/FreeBSD-base.conf
 	else
 		cd ${WORLDDIR} && \
 			make DESTDIR=${DESTDIR} ${INSTALLOPTS} \
