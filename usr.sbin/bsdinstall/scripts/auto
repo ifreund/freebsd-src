@@ -39,7 +39,7 @@ f_include $BSDCFG_SHARE/dialog.subr
 # during the installation process. They are then restored when restarting this
 # script.
 #
-user_env_vars="BSDINSTALL_DISTSITE DISTRIBUTIONS WORKAROUND_GPTACTIVE WORKAROUND_LENOVO ZFSBOOT_PARTITION_SCHEME"
+user_env_vars="BSDINSTALL_DISTSITE DISTRIBUTIONS WORKAROUND_GPTACTIVE WORKAROUND_LENOVO ZFSBOOT_PARTITION_SCHEME BSDINSTALL_PKG_REPOS_DIR"
 
 #
 # Strings that should be moved to an i18n file and loaded with f_include_lang()
@@ -198,10 +198,10 @@ trap error SIGINT	# Catch cntrl-C here
 if [ -z "$BSDINSTALL_SKIP_HOSTNAME" ]; then bsdinstall hostname || error "Set hostname failed"; fi
 
 if [ -f /usr/freebsd-packages/repos/FreeBSD-base-offline.conf ]; then
-	HAVE_BASE_PACKAGES=yes
+	HAVE_OFFLINE_BASE_PACKAGES=yes
 	PKGBASE_DEFAULT_BUTTON=--default-no
 else
-	unset HAVE_BASE_PACKAGES
+	unset HAVE_OFFLINE_BASE_PACKAGES
 	unset PKGBASE_DEFAULT_BUTTON
 fi
 
@@ -218,7 +218,12 @@ else
 fi
 
 if [ "$PKGBASE" == yes ]; then
-	if [ "$HAVE_BASE_PACKAGES" == yes ]; then
+	if [ -n "$BSDINSTALL_PKG_REPOS_DIR" ]; then
+		bsddialog --backtitle "$OSNAME Installer" --title "Custom Installation" \
+		    --msgbox "Using custom pkg repository configuration from directory $BSDINSTALL_PKG_REPOS_DIR (BSDINSTALL_PKG_REPOS_DIR). The next few screens will allow you to configure networking." 0 0
+		bsdinstall netconfig || error
+		NETCONFIG_DONE=yes
+	elif [ "$HAVE_OFFLINE_BASE_PACKAGES" == yes ]; then
 		bsddialog --backtitle "$OSNAME Installer" --title "Network or Offline Installation" \
 		    --yes-label "Network" --no-label "Offline (Limited Packages)" --yesno \
 		    "Would you like to fetch packages from the internet or use the limited set of packages included in this installation media?" 0 0
