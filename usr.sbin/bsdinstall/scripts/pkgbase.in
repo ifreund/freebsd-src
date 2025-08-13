@@ -239,7 +239,7 @@ local function pkgbase()
 	-- Always install the default FreeBSD-base.conf file to the chroot, even
 	-- if we don't actually fetch the packages from the repository specified
 	-- there (e.g. because we are performing an offline installation).
-	local chroot_repos_dir = chroot .. "/usr/local/etc/pkg/repos/"
+	local chroot_repos_dir = chroot .. "/etc/pkg/"
 	assert(os.execute("mkdir -p " .. chroot_repos_dir))
 	assert(os.execute("cp /usr/share/bsdinstall/FreeBSD-base.conf " ..
 		chroot_repos_dir))
